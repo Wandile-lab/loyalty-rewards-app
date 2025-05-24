@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshPoint - Loyalty Rewards</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Login/Signup Section -->
+        <div id="auth-section" class="auth-container">
+            <div class="logo">
+                <h1>FreshPoint</h1>
+                <p>Your Beauty & Wellness Destination</p>
+            </div>
+            
+            <!-- Login Form -->
+            <div id="login-form" class="form-container">
+                <h2>Welcome Back!</h2>
+                <form id="loginForm">
+                    <div class="input-group">
+                        <input type="email" id="loginEmail" placeholder="Email" required>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="loginPassword" placeholder="Password" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Login</button>
+                </form>
+                <p class="switch-form">Don't have an account? <a href="#" id="showSignup">Sign up here</a></p>
+            </div>
+            
+            <!-- Signup Form -->
+            <div id="signup-form" class="form-container hidden">
+                <h2>Join FreshPoint!</h2>
+                <form id="signupForm">
+                    <div class="input-group">
+                        <input type="text" id="signupName" placeholder="Full Name" required>
+                    </div>
+                    <div class="input-group">
+                        <input type="email" id="signupEmail" placeholder="Email" required>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="signupPassword" placeholder="Password" required>
+                    </div>
+                    <div class="input-group">
+                        <select id="preferredService" required>
+                            <option value="">Select Preferred Service</option>
+                            <option value="haircut">Hair Cut</option>
+                            <option value="facial">Facial Treatment</option>
+                            <option value="massage">Massage Therapy</option>
+                            <option value="manicure">Manicure/Pedicure</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn-primary">Create Account</button>
+                </form>
+                <p class="switch-form">Already have an account? <a href="#" id="showLogin">Login here</a></p>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard-section" class="dashboard hidden">
+            <header class="dashboard-header">
+                <div class="user-welcome">
+                    <h1 id="welcomeMessage">Hey User, Welcome to FreshPoint!</h1>
+                    <p>Your wellness journey continues here</p>
+                </div>
+                <button id="logoutBtn" class="btn-secondary">Logout</button>
+            </header>
+
+            <div class="dashboard-content">
+                <!-- Rewards Status Card -->
+                <div class="rewards-card">
+                    <div class="card-header">
+                        <h3>Your Rewards Status</h3>
+                        <div class="points-display">
+                            <span id="currentPoints">0</span> Points
+                        </div>
+                    </div>
+                    
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div id="progressFill" class="progress-fill"></div>
+                        </div>
+                        <p class="progress-text">
+                            <span id="visitsLeft">5</span> visits left for your free service!
+                        </p>
+                    </div>
+
+                    <div class="visit-history">
+                        <h4>Recent Visits</h4>
+                        <div id="visitList" class="visit-list">
+                            <p class="no-visits">No visits yet. Check in to start earning rewards!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Check-in Section -->
+                <div class="checkin-card">
+                    <h3>Check-in for Service</h3>
+                    <div class="service-selection">
+                        <select id="serviceType">
+                            <option value="">Select Service</option>
+                            <option value="haircut">Hair Cut</option>
+                            <option value="facial">Facial Treatment</option>
+                            <option value="massage">Massage Therapy</option>
+                            <option value="manicure">Manicure/Pedicure</option>
+                            <option value="styling">Hair Styling</option>
+                            <option value="treatment">Special Treatment</option>
+                        </select>
+                    </div>
+                    <button id="checkinBtn" class="btn-primary btn-large">Check In Now</button>
+                    <div id="checkinMessage" class="message"></div>
+                </div>
+
+                <!-- Free Service Section -->
+                <div id="freeServiceCard" class="free-service-card hidden">
+                    <div class="celebration">🎉</div>
+                    <h3>Congratulations!</h3>
+                    <p>You've earned a free service!</p>
+                    <div class="free-service-options">
+                        <button class="free-service-btn" data-service="haircut">Free Hair Cut</button>
+                        <button class="free-service-btn" data-service="facial">Free Facial</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Success!</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p id="modalMessage">Action completed successfully!</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
