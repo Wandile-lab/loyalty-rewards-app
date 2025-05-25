@@ -1,454 +1,528 @@
-// FreshPoint Loyalty System - JavaScript Application
+// Initialize audio context for sound effects
+let audioContext;
+let blop;
 
-class FreshPointApp {
-    constructor() {
-        this.users = new Map(); // Store user data in memory
-        this.currentUser = null;
-        this.init();
-    }
-
-    init() {
-        this.bindEvents();
-        this.checkExistingSession();
-    }
-
-    bindEvents() {
-        // Form switching
-        document.getElementById('showSignup').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showSignupForm();
-        });
-
-        document.getElementById('showLogin').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showLoginForm();
-        });
-
-        // Form submissions
-        document.getElementById('loginForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.handleLogin();
-        });
-
-        document.getElementById('signupForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.handleSignup();
-        });
-
-        // Dashboard actions
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            this.handleLogout();
-        });
-
-        document.getElementById('checkinBtn').addEventListener('click', () => {
-            this.handleCheckin();
-        });
-
-        // Free service buttons
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('free-service-btn')) {
-                this.redeemFreeService(e.target.dataset.service);
+function initAudio() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        blop = {
+            play: () => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.1);
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.1);
             }
-        });
-
-        // Modal close
-        document.querySelector('.close-modal').addEventListener('click', () => {
-            this.closeModal();
-        });
-
-        // Close modal on outside click
-        document.getElementById('successModal').addEventListener('click', (e) => {
-            if (e.target.id === 'successModal') {
-                this.closeModal();
-            }
-        });
-    }
-
-    showSignupForm() {
-        document.getElementById('login-form').classList.add('hidden');
-        document.getElementById('signup-form').classList.remove('hidden');
-    }
-
-    showLoginForm() {
-        document.getElementById('signup-form').classList.add('hidden');
-        document.getElementById('login-form').classList.remove('hidden');
-    }
-
-    handleSignup() {
-        const name = document.getElementById('signupName').value.trim();
-        const email = document.getElementById('signupEmail').value.trim();
-        const password = document.getElementById('signupPassword').value;
-        const preferredService = document.getElementById('preferredService').value;
-
-        if (!name || !email || !password || !preferredService) {
-            this.showMessage('Please fill in all fields', 'error', 'checkinMessage');
-            return;
-        }
-
-        if (this.users.has(email)) {
-            this.showMessage('User already exists. Please login instead.', 'error', 'checkinMessage');
-            return;
-        }
-
-        // Create new user
-        const userData = {
-            name: name,
-            email: email,
-            password: password, // In real app, this should be hashed
-            preferredService: preferredService,
-            points: 0,
-            visits: [],
-            joinDate: new Date().toISOString(),
-            freeServicesAvailable: 0
         };
-
-        this.users.set(email, userData);
-        this.currentUser = userData;
-
-        this.showModal('Account Created!', `Welcome ${name}! Your FreshPoint account has been created successfully.`);
-        
-        setTimeout(() => {
-            this.closeModal();
-            this.showDashboard();
-        }, 2000);
-    }
-
-    handleLogin() {
-        const email = document.getElementById('loginEmail').value.trim();
-        const password = document.getElementById('loginPassword').value;
-
-        if (!email || !password) {
-            this.showMessage('Please fill in all fields', 'error', 'checkinMessage');
-            return;
-        }
-
-        const userData = this.users.get(email);
-        if (!userData || userData.password !== password) {
-            this.showMessage('Invalid email or password', 'error', 'checkinMessage');
-            return;
-        }
-
-        this.currentUser = userData;
-        this.showDashboard();
-    }
-
-    handleLogout() {
-        this.currentUser = null;
-        this.showAuthSection();
-        this.clearForms();
-    }
-
-    handleCheckin() {
-        const serviceType = document.getElementById('serviceType').value;
-        
-        if (!serviceType) {
-            this.showMessage('Please select a service type', 'error', 'checkinMessage');
-            return;
-        }
-
-        if (!this.currentUser) {
-            this.showMessage('Please login first', 'error', 'checkinMessage');
-            return;
-        }
-
-        // Add visit to user's history
-        const visit = {
-            service: this.getServiceName(serviceType),
-            date: new Date().toLocaleString(),
-            points: 1
-        };
-
-        this.currentUser.visits.push(visit);
-        this.currentUser.points += 1;
-
-        // Check if user earned a free service
-        if (this.currentUser.points % 5 === 0) {
-            this.currentUser.freeServicesAvailable += 1;
-            this.showModal('Congratulations! 🎉', `You've earned a free service! You now have ${this.currentUser.freeServicesAvailable} free service(s) available.`);
-        } else {
-            this.showMessage(`Check-in successful! You earned 1 point for your ${visit.service}.`, 'success', 'checkinMessage');
-        }
-
-        // Reset service selection
-        document.getElementById('serviceType').value = '';
-        
-        // Update dashboard
-        this.updateDashboard();
-
-        // Clear message after 5 seconds
-        setTimeout(() => {
-            this.clearMessage('checkinMessage');
-        }, 5000);
-    }
-
-    redeemFreeService(serviceType) {
-        if (this.currentUser.freeServicesAvailable <= 0) {
-            this.showMessage('No free services available', 'error', 'checkinMessage');
-            return;
-        }
-
-        this.currentUser.freeServicesAvailable -= 1;
-        
-        const serviceName = this.getServiceName(serviceType);
-        this.showModal('Service Redeemed! 🎊', `Your free ${serviceName} has been redeemed! Please visit our location to enjoy your complimentary service.`);
-        
-        // Add redeemed service to history
-        const redemption = {
-            service: `FREE ${serviceName}`,
-            date: new Date().toLocaleString(),
-            points: 0
-        };
-        this.currentUser.visits.push(redemption);
-        
-        this.updateDashboard();
-    }
-
-    showDashboard() {
-        document.getElementById('auth-section').classList.add('hidden');
-        document.getElementById('dashboard-section').classList.remove('hidden');
-        
-        this.updateWelcomeMessage();
-        this.updateDashboard();
-    }
-
-    showAuthSection() {
-        document.getElementById('dashboard-section').classList.add('hidden');
-        document.getElementById('auth-section').classList.remove('hidden');
-    }
-
-    updateWelcomeMessage() {
-        const welcomeElement = document.getElementById('welcomeMessage');
-        welcomeElement.textContent = `Hey ${this.currentUser.name}, Welcome to FreshPoint!`;
-    }
-
-    updateDashboard() {
-        this.updatePointsDisplay();
-        this.updateProgressBar();
-        this.updateVisitHistory();
-        this.updateFreeServiceCard();
-    }
-
-    updatePointsDisplay() {
-        document.getElementById('currentPoints').textContent = this.currentUser.points;
-    }
-
-    updateProgressBar() {
-        const visitsUntilReward = 5 - (this.currentUser.points % 5);
-        const progress = ((this.currentUser.points % 5) / 5) * 100;
-        
-        document.getElementById('progressFill').style.width = `${progress}%`;
-        document.getElementById('visitsLeft').textContent = visitsUntilReward === 5 ? 5 : visitsUntilReward;
-    }
-
-    updateVisitHistory() {
-        const visitList = document.getElementById('visitList');
-        
-        if (this.currentUser.visits.length === 0) {
-            visitList.innerHTML = '<p class="no-visits">No visits yet. Check in to start earning rewards!</p>';
-            return;
-        }
-
-        const recentVisits = this.currentUser.visits.slice(-5).reverse();
-        visitList.innerHTML = recentVisits.map(visit => `
-            <div class="visit-item">
-                <div class="service">${visit.service}</div>
-                <div class="date">${visit.date}</div>
-            </div>
-        `).join('');
-    }
-
-    updateFreeServiceCard() {
-        const freeServiceCard = document.getElementById('freeServiceCard');
-        
-        if (this.currentUser.freeServicesAvailable > 0) {
-            freeServiceCard.classList.remove('hidden');
-            freeServiceCard.querySelector('p').textContent = 
-                `You have ${this.currentUser.freeServicesAvailable} free service${this.currentUser.freeServicesAvailable > 1 ? 's' : ''} available!`;
-        } else {
-            freeServiceCard.classList.add('hidden');
-        }
-    }
-
-    getServiceName(serviceType) {
-        const serviceNames = {
-            'haircut': 'Hair Cut',
-            'facial': 'Facial Treatment',
-            'massage': 'Massage Therapy',
-            'manicure': 'Manicure/Pedicure',
-            'styling': 'Hair Styling',
-            'treatment': 'Special Treatment'
-        };
-        return serviceNames[serviceType] || serviceType;
-    }
-
-    showMessage(message, type, elementId) {
-        const messageElement = document.getElementById(elementId);
-        messageElement.textContent = message;
-        messageElement.className = `message ${type}`;
-        messageElement.style.display = 'block';
-    }
-
-    clearMessage(elementId) {
-        const messageElement = document.getElementById(elementId);
-        messageElement.textContent = '';
-        messageElement.className = 'message';
-        messageElement.style.display = 'none';
-    }
-
-    showModal(title, message) {
-        document.getElementById('modalTitle').textContent = title;
-        document.getElementById('modalMessage').textContent = message;
-        document.getElementById('successModal').classList.remove('hidden');
-    }
-
-    closeModal() {
-        document.getElementById('successModal').classList.add('hidden');
-    }
-
-    clearForms() {
-        document.getElementById('loginForm').reset();
-        document.getElementById('signupForm').reset();
-        document.getElementById('serviceType').value = '';
-        this.clearMessage('checkinMessage');
-    }
-
-    checkExistingSession() {
-        // In a real application, you might check for saved session data
-        // For demo purposes, we'll start fresh each time
-        this.showAuthSection();
-    }
-
-    // Demo data for testing
-    loadDemoData() {
-        // Create a demo user for testing
-        const demoUser = {
-            name: 'John Doe',
-            email: 'demo@freshpoint.com',
-            password: 'demo123',
-            preferredService: 'haircut',
-            points: 3,
-            visits: [
-                {
-                    service: 'Hair Cut',
-                    date: new Date(Date.now() - 86400000 * 3).toLocaleString(),
-                    points: 1
-                },
-                {
-                    service: 'Facial Treatment',
-                    date: new Date(Date.now() - 86400000 * 2).toLocaleString(),
-                    points: 1
-                },
-                {
-                    service: 'Massage Therapy',
-                    date: new Date(Date.now() - 86400000).toLocaleString(),
-                    points: 1
-                }
-            ],
-            joinDate: new Date(Date.now() - 86400000 * 7).toISOString(),
-            freeServicesAvailable: 0
-        };
-
-        this.users.set('demo@freshpoint.com', demoUser);
-    }
-
-    // Utility method to format dates nicely
-    formatDate(dateString) {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffTime = Math.abs(now - date);
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays === 0) {
-            return 'Today';
-        } else if (diffDays === 1) {
-            return 'Yesterday';
-        } else if (diffDays < 7) {
-            return `${diffDays} days ago`;
-        } else {
-            return date.toLocaleDateString();
-        }
-    }
-
-    // Add some animations for better UX
-    animatePoints() {
-        const pointsElement = document.getElementById('currentPoints');
-        pointsElement.style.transform = 'scale(1.2)';
-        pointsElement.style.color = '#28a745';
-        
-        setTimeout(() => {
-            pointsElement.style.transform = 'scale(1)';
-            pointsElement.style.color = '';
-        }, 300);
-    }
-
-    // Validate email format
-    isValidEmail(email) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    }
-
-    // Enhanced signup validation
-    validateSignupForm(name, email, password, preferredService) {
-        const errors = [];
-
-        if (name.length < 2) {
-            errors.push('Name must be at least 2 characters long');
-        }
-
-        if (!this.isValidEmail(email)) {
-            errors.push('Please enter a valid email address');
-        }
-
-        if (password.length < 6) {
-            errors.push('Password must be at least 6 characters long');
-        }
-
-        if (!preferredService) {
-            errors.push('Please select a preferred service');
-        }
-
-        return errors;
     }
 }
 
-// Initialize the application when DOM is loaded
+// Simple love animation function
+function playLoveAnimation() {
+    const messageEl = document.getElementById('message');
+    const changingWord = document.getElementById('changing-word');
+    
+    if (!messageEl || !changingWord) return;
+    
+    // Show the message
+    messageEl.classList.add('show');
+    
+    // Animate the word change
+    setTimeout(() => {
+        changingWord.classList.add('fade');
+        setTimeout(() => {
+            changingWord.textContent = "❤️";
+            changingWord.classList.remove('fade');
+            
+            // Play sound effect
+            if (blop && blop.play) {
+                blop.play();
+            }
+            
+            // Hide message after animation
+            setTimeout(() => {
+                messageEl.classList.remove('show');
+                // Reset the word back to "love"
+                setTimeout(() => {
+                    changingWord.classList.add('fade');
+                    setTimeout(() => {
+                        changingWord.textContent = "love";
+                        changingWord.classList.remove('fade');
+                    }, 300);
+                }, 500);
+            }, 2000);
+        }, 600);
+    }, 1000);
+}
+
+// App state
+let currentUser = null;
+let userVisits = 0;
+const maxVisits = 5;
+
+// DOM elements
+const authSection = document.getElementById('auth-section');
+const dashboardSection = document.getElementById('dashboard-section');
+const loginForm = document.getElementById('login-form');
+const signupForm = document.getElementById('signup-form');
+const showSignupBtn = document.getElementById('showSignup');
+const showLoginBtn = document.getElementById('showLogin');
+const logoutBtn = document.getElementById('logoutBtn');
+const checkinBtn = document.getElementById('checkinBtn');
+const serviceType = document.getElementById('serviceType');
+const checkinMessage = document.getElementById('checkinMessage');
+
+// Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    const app = new FreshPointApp();
-    
-    // Load demo data for testing (remove in production)
-    app.loadDemoData();
-    
-    // Add some helpful tips in console
-    console.log('🌟 FreshPoint Loyalty System Loaded!');
-    console.log('💡 Demo login: demo@freshpoint.com / demo123');
-    console.log('🎯 Try creating a new account or use the demo account');
+    console.log('FreshPoint app loaded successfully!');
+    setupEventListeners();
+    initializeElementRefs();
 });
 
-// Add some global utility functions
-window.FreshPointUtils = {
-    // Format currency (if needed for future features)
-    formatCurrency: (amount) => {
-        return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'USD'
-        }).format(amount);
-    },
+// Initialize element references for animation
+function initializeElementRefs() {
+    // Simple animation doesn't need specific letter elements
+    console.log('Animation elements initialized');
+}
 
-    // Generate random promotional codes (for future features)
-    generatePromoCode: () => {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        let result = 'FP';
-        for (let i = 0; i < 6; i++) {
-            result += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return result;
-    },
-
-    // Calculate loyalty tier (for future features)
-    calculateTier: (points) => {
-        if (points >= 50) return 'Platinum';
-        if (points >= 25) return 'Gold';
-        if (points >= 10) return 'Silver';
-        return 'Bronze';
+// Setup all event listeners
+function setupEventListeners() {
+    // Switch between login and signup forms
+    if (showSignupBtn) {
+        showSignupBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            loginForm.classList.add('hidden');
+            signupForm.classList.remove('hidden');
+        });
     }
+
+    if (showLoginBtn) {
+        showLoginBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            signupForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+        });
+    }
+
+    // Login form submission
+    const loginFormEl = document.getElementById('loginForm');
+    if (loginFormEl) {
+        loginFormEl.addEventListener('submit', handleLogin);
+    }
+
+    // Signup form submission
+    const signupFormEl = document.getElementById('signupForm');
+    if (signupFormEl) {
+        signupFormEl.addEventListener('submit', handleSignup);
+    }
+
+    // Logout button
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+    }
+
+    // Check-in button
+    if (checkinBtn) {
+        checkinBtn.addEventListener('click', handleCheckin);
+    }
+
+    // Modal close functionality
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('close-modal')) {
+            const successModal = document.getElementById('successModal');
+            if (successModal) {
+                successModal.classList.add('hidden');
+            }
+        }
+    });
+
+    // Free service buttons
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('free-service-btn')) {
+            handleFreeService(e);
+        }
+    });
+}
+
+// Handle login form submission
+function handleLogin(e) {
+    e.preventDefault();
+    const emailEl = document.getElementById('loginEmail');
+    const passwordEl = document.getElementById('loginPassword');
+    
+    if (!emailEl || !passwordEl) return;
+    
+    const email = emailEl.value;
+    const password = passwordEl.value;
+    
+    // Simple validation (in real app, this would connect to backend)
+    if (email && password) {
+        currentUser = { 
+            email, 
+            visits: getUserVisits(email) || 0 
+        };
+        userVisits = currentUser.visits;
+        showDashboard();
+    } else {
+        showMessage('Please fill in all fields', 'error');
+    }
+}
+
+// Handle signup form submission
+function handleSignup(e) {
+    e.preventDefault();
+    const nameEl = document.getElementById('signupName');
+    const emailEl = document.getElementById('signupEmail');
+    const passwordEl = document.getElementById('signupPassword');
+    const preferredServiceEl = document.getElementById('preferredService');
+    
+    if (!nameEl || !emailEl || !passwordEl || !preferredServiceEl) return;
+    
+    const name = nameEl.value;
+    const email = emailEl.value;
+    const password = passwordEl.value;
+    const preferredService = preferredServiceEl.value;
+    
+    if (name && email && password && preferredService) {
+        currentUser = { 
+            name, 
+            email, 
+            preferredService,
+            visits: 0 
+        };
+        userVisits = 0;
+        saveUserData();
+        showDashboard();
+    } else {
+        showMessage('Please fill in all fields', 'error');
+    }
+}
+
+// Show dashboard
+function showDashboard() {
+    if (authSection) authSection.classList.add('hidden');
+    if (dashboardSection) dashboardSection.classList.remove('hidden');
+    
+    const welcomeMsg = document.getElementById('welcomeMessage');
+    if (welcomeMsg) {
+        if (currentUser.name) {
+            welcomeMsg.textContent = `Hey ${currentUser.name}, Welcome to FreshPoint!`;
+        } else {
+            welcomeMsg.textContent = `Hey ${currentUser.email.split('@')[0]}, Welcome to FreshPoint!`;
+        }
+    }
+    
+    updateRewardsDisplay();
+    loadVisitHistory();
+}
+
+// Handle logout
+function handleLogout() {
+    // Save current user data before logout
+    if (currentUser) {
+        saveUserVisits(currentUser.email, userVisits);
+    }
+    
+    currentUser = null;
+    userVisits = 0;
+    
+    if (dashboardSection) dashboardSection.classList.add('hidden');
+    if (authSection) authSection.classList.remove('hidden');
+    if (loginForm) loginForm.classList.remove('hidden');
+    if (signupForm) signupForm.classList.add('hidden');
+    
+    // Clear form fields
+    const loginFormEl = document.getElementById('loginForm');
+    const signupFormEl = document.getElementById('signupForm');
+    if (loginFormEl) loginFormEl.reset();
+    if (signupFormEl) signupFormEl.reset();
+}
+
+// Handle check-in functionality
+function handleCheckin() {
+    if (!serviceType) return;
+    
+    const service = serviceType.value;
+    
+    if (!service) {
+        showMessage('Please select a service type', 'error');
+        return;
+    }
+
+    // Initialize audio on user interaction
+    initAudio();
+    
+    // Show love animation
+    playLoveAnimation();
+    
+    // Update visits
+    userVisits++;
+    addVisit(service);
+    updateRewardsDisplay();
+    
+    // Save user data
+    if (currentUser) {
+        saveUserVisits(currentUser.email, userVisits);
+    }
+    
+    showMessage(`Checked in for ${getServiceDisplayName(service)}! Thanks for visiting FreshPoint!`, 'success');
+    
+    // Reset service selection
+    serviceType.value = '';
+    
+    // Check if earned free service
+    if (userVisits >= maxVisits) {
+        setTimeout(() => {
+            const freeServiceCard = document.getElementById('freeServiceCard');
+            if (freeServiceCard) {
+                freeServiceCard.classList.remove('hidden');
+            }
+        }, 2000);
+    }
+}
+
+// Handle free service selection
+function handleFreeService(e) {
+    const service = e.target.dataset.service;
+    const serviceName = e.target.textContent.replace('Free ', '');
+    
+    showMessage(`Congratulations! Your free ${serviceName} has been booked!`, 'success');
+    
+    const freeServiceCard = document.getElementById('freeServiceCard');
+    if (freeServiceCard) {
+        freeServiceCard.classList.add('hidden');
+    }
+    
+    // Reset visits after claiming free service
+    userVisits = 0;
+    updateRewardsDisplay();
+    
+    // Save updated visit count
+    if (currentUser) {
+        saveUserVisits(currentUser.email, userVisits);
+    }
+    
+    // Clear visit history
+    const visitList = document.getElementById('visitList');
+    if (visitList) {
+        visitList.innerHTML = '<p class="no-visits">No visits yet. Check in to start earning rewards!</p>';
+    }
+    
+    // Clear stored visit history
+    if (currentUser) {
+        const visitKey = `freshpoint_visits_${currentUser.email}`;
+        localStorage.removeItem(visitKey);
+    }
+}
+
+// Add visit to history
+function addVisit(service) {
+    const visitList = document.getElementById('visitList');
+    if (!visitList) return;
+    
+    const noVisits = visitList.querySelector('.no-visits');
+    if (noVisits) {
+        noVisits.remove();
+    }
+    
+    const visitItem = document.createElement('div');
+    visitItem.className = 'visit-item';
+    visitItem.innerHTML = `
+        <strong>${getServiceDisplayName(service)}</strong>
+        <br>
+        <small>${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
+    `;
+    
+    visitList.insertBefore(visitItem, visitList.firstChild);
+    
+    // Save visit to local storage
+    saveVisitToHistory(service);
+}
+
+// Get display name for service
+function getServiceDisplayName(service) {
+    const serviceNames = {
+        'haircut': 'Hair Cut',
+        'facial': 'Facial Treatment',
+        'massage': 'Massage Therapy',
+        'manicure': 'Manicure/Pedicure',
+        'styling': 'Hair Styling',
+        'treatment': 'Special Treatment'
+    };
+    return serviceNames[service] || service;
+}
+
+// Update rewards display
+function updateRewardsDisplay() {
+    const currentPointsEl = document.getElementById('currentPoints');
+    const visitsLeftEl = document.getElementById('visitsLeft');
+    const progressFillEl = document.getElementById('progressFill');
+    
+    if (currentPointsEl) {
+        currentPointsEl.textContent = userVisits * 20;
+    }
+    
+    if (visitsLeftEl) {
+        visitsLeftEl.textContent = Math.max(0, maxVisits - userVisits);
+    }
+    
+    const progressPercentage = (userVisits / maxVisits) * 100;
+    if (progressFillEl) {
+        progressFillEl.style.width = `${Math.min(progressPercentage, 100)}%`;
+    }
+    
+    // Update progress text
+    if (visitsLeftEl) {
+        const progressTextElement = visitsLeftEl.parentElement;
+        
+        if (userVisits >= maxVisits) {
+            progressTextElement.innerHTML = '<strong style="color: #28a745;">🎉 You\'ve earned a free service! 🎉</strong>';
+        } else {
+            progressTextElement.innerHTML = `<span id="visitsLeft">${maxVisits - userVisits}</span> visits left for your free service!`;
+        }
+    }
+}
+
+// Show message
+function showMessage(text, type) {
+    if (!checkinMessage) return;
+    
+    checkinMessage.textContent = text;
+    checkinMessage.className = `message ${type}`;
+    
+    setTimeout(() => {
+        checkinMessage.textContent = '';
+        checkinMessage.className = 'message';
+    }, 5000);
+}
+
+// Load visit history from storage
+function loadVisitHistory() {
+    if (!currentUser) return;
+    
+    const visitKey = `freshpoint_visits_${currentUser.email}`;
+    const visits = JSON.parse(localStorage.getItem(visitKey) || '[]');
+    const visitList = document.getElementById('visitList');
+    
+    if (!visitList) return;
+    
+    if (visits.length === 0) {
+        visitList.innerHTML = '<p class="no-visits">No visits yet. Check in to start earning rewards!</p>';
+        return;
+    }
+    
+    visitList.innerHTML = '';
+    visits.forEach(visit => {
+        const visitItem = document.createElement('div');
+        visitItem.className = 'visit-item';
+        visitItem.innerHTML = `
+            <strong>${getServiceDisplayName(visit.service)}</strong>
+            <br>
+            <small>${new Date(visit.timestamp).toLocaleDateString()} at ${new Date(visit.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
+        `;
+        visitList.appendChild(visitItem);
+    });
+}
+
+// Local Storage Functions (for demo purposes - in real app use proper backend)
+function saveUserData() {
+    if (currentUser) {
+        const userData = {
+            name: currentUser.name,
+            email: currentUser.email,
+            preferredService: currentUser.preferredService,
+            visits: userVisits
+        };
+        localStorage.setItem(`freshpoint_user_${currentUser.email}`, JSON.stringify(userData));
+    }
+}
+
+function saveUserVisits(email, visits) {
+    const existingData = localStorage.getItem(`freshpoint_user_${email}`);
+    if (existingData) {
+        const userData = JSON.parse(existingData);
+        userData.visits = visits;
+        localStorage.setItem(`freshpoint_user_${email}`, JSON.stringify(userData));
+    }
+}
+
+function getUserVisits(email) {
+    const userData = localStorage.getItem(`freshpoint_user_${email}`);
+    if (userData) {
+        return JSON.parse(userData).visits || 0;
+    }
+    return 0;
+}
+
+function saveVisitToHistory(service) {
+    if (!currentUser) return;
+    
+    const visitKey = `freshpoint_visits_${currentUser.email}`;
+    const existingVisits = JSON.parse(localStorage.getItem(visitKey) || '[]');
+    
+    const newVisit = {
+        service: service,
+        timestamp: Date.now(),
+        date: new Date().toISOString()
+    };
+    
+    existingVisits.unshift(newVisit); // Add to beginning of array
+    
+    // Keep only last 20 visits
+    if (existingVisits.length > 20) {
+        existingVisits.splice(20);
+    }
+    
+    localStorage.setItem(visitKey, JSON.stringify(existingVisits));
+}
+
+// Utility function to format date
+function formatDate(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString() + ' at ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+}
+
+// Error handling wrapper for localStorage operations
+function safeLocalStorageOperation(operation) {
+    try {
+        return operation();
+    } catch (error) {
+        console.warn('LocalStorage operation failed:', error);
+        return null;
+    }
+}
+
+// Initialize app state from localStorage on page load
+function initializeAppState() {
+    // Check if user was previously logged in (for demo purposes)
+    const lastUser = localStorage.getItem('freshpoint_last_user');
+    if (lastUser) {
+        const userData = JSON.parse(localStorage.getItem(`freshpoint_user_${lastUser}`));
+        if (userData) {
+            currentUser = userData;
+            userVisits = userData.visits || 0;
+            showDashboard();
+        }
+    }
+}
+
+// Export functions for potential use in other scripts
+window.FreshPointApp = {
+    initAudio,
+    playLoveAnimation,
+    handleLogin,
+    handleSignup,
+    handleLogout,
+    handleCheckin,
+    showMessage,
+    updateRewardsDisplay
 };
