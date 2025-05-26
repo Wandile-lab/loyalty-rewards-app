@@ -1,0 +1,81 @@
+USERS TABLE
+CREATE TABLE IF NOT EXISTS users (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    email VARCHAR UNIQUE NOT NULL,
+    name VARCHAR NOT NULL,
+    password_hash VARCHAR NOT NULL,
+    preferred_service VARCHAR,
+    points INTEGER DEFAULT 0,
+    free_services_available INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Table description
+COMMENT ON TABLE users IS 'Stores user account information including login details and preferences.';
+
+-- Column descriptions
+COMMENT ON COLUMN users.id IS 'Unique identifier for each user (UUID).';
+COMMENT ON COLUMN users.email IS 'User email address, must be unique.';
+COMMENT ON COLUMN users.name IS 'Full name of the user.';
+COMMENT ON COLUMN users.password_hash IS 'Secure hashed password.';
+COMMENT ON COLUMN users.preferred_service IS 'The preferred service type selected by the user.';
+COMMENT ON COLUMN users.points IS 'Loyalty or reward points earned.';
+COMMENT ON COLUMN users.free_services_available IS 'Count of free services available to the user.';
+COMMENT ON COLUMN users.created_at IS 'Timestamp when the user account was created.';
+
+VISITS TABLE
+-- Users table
+CREATE TABLE IF NOT EXISTS users (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    email VARCHAR UNIQUE NOT NULL,
+    name VARCHAR NOT NULL,
+    password_hash VARCHAR NOT NULL,
+    preferred_service VARCHAR,
+    points INTEGER DEFAULT 0,
+    free_services_available INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Visits table
+CREATE TABLE IF NOT EXISTS visits (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    service_type VARCHAR NOT NULL,
+    service_name VARCHAR NOT NULL,
+    points_earned INTEGER DEFAULT 1,
+    is_free_service BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Users metadata
+COMMENT ON TABLE users IS 'Stores user account information including login details and preferences.';
+COMMENT ON COLUMN users.id IS 'Unique identifier for each user (UUID).';
+COMMENT ON COLUMN users.email IS 'User email address, must be unique.';
+COMMENT ON COLUMN users.name IS 'Full name of the user.';
+COMMENT ON COLUMN users.password_hash IS 'Secure hashed password.';
+COMMENT ON COLUMN users.preferred_service IS 'The preferred service type selected by the user.';
+COMMENT ON COLUMN users.points IS 'Loyalty or reward points earned.';
+COMMENT ON COLUMN users.free_services_available IS 'Count of free services available to the user.';
+COMMENT ON COLUMN users.created_at IS 'Timestamp when the user account was created.';
+
+-- Visits metadata
+COMMENT ON TABLE visits IS 'Logs of each user visit, tracking points and service type.';
+COMMENT ON COLUMN visits.id IS 'Unique visit ID.';
+COMMENT ON COLUMN visits.user_id IS 'Foreign key to the users table.';
+COMMENT ON COLUMN visits.service_type IS 'Category or type of the service visited.';
+COMMENT ON COLUMN visits.service_name IS 'Specific name of the service.';
+COMMENT ON COLUMN visits.points_earned IS 'Number of points earned during the visit.';
+COMMENT ON COLUMN visits.is_free_service IS 'Flag indicating if this visit was redeemed as a free service.';
+COMMENT ON COLUMN visits.created_at IS 'Timestamp of the visit.';
+
+ROW LEVEL SECURITY
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE visits ENABLE ROW LEVEL SECURITY;
+COMMENT ON TABLE users IS 'User information table';
+
+POLICY FOR USERS 
+CREATE POLICY "Users can view own data" ON users FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can update own data" ON users FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can view own visits" ON visits FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own visits" ON visits FOR INSERT WITH CHECK (auth.uid() = user_id);
+

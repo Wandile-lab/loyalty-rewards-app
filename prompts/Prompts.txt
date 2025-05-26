@@ -1,0 +1,45 @@
+ AI Prompt Engineering (Member 3)
+Here are the AI prompts used during development and testing, primarily run via Claude.ai and Cursor AI.
+
+ Prompt 1: Reward System Logic
+"You are a backend logic assistant for a loyalty system. A customer checks in using their phone number. After 5 visits, they earn a free reward. Help design a simple reward tracking logic, including:
+– how visits are stored,
+– when a reward should be triggered,
+– how to prevent abuse (e.g., multiple check-ins per day)."
+
+ Prompt 2: Test Case Generator for Visit Tracking
+"You are a QA tester. Given the feature: 'Track customer visits via phone number and unlock a reward after 5 visits,' generate 5 unit tests that check:
+– valid and invalid phone numbers,
+– reward logic triggers at the 5th visit,
+– reward doesn’t trigger early,
+– user visits reset after a reward is given,
+– and duplicate visits on the same day are ignored."
+
+ Prompt 3: Microcopy for Frontend
+"You are a UX writer. Help me generate short, friendly microcopy for:
+– a check-in success message,
+– a reward unlocked message,
+– a 'visit added' toast,
+– and empty states (e.g., 'No visits yet. Check in to earn your first reward!'). Keep the tone fun but professional."
+
+ Prompt 4: README Generator
+"You are a documentation expert. Help me draft a clean, professional README.md for a small Supabase-based loyalty system. It should include:
+– Project overview
+– Tech stack used
+– Setup instructions
+– Member roles
+– Screenshots
+– AI prompts used
+Use markdown formatting."
+
+ Prompt 5: Slide Polish for Presentation
+"You are a presentation assistant. Improve this 3-minute pitch for a loyalty system that uses phone numbers to track visits and reward loyal customers. Keep the tone confident and simple. Suggest strong opening and closing lines, and transitions between Problem, Solution, and Demo slides."
+
+ Prompt 6: Frontend UX Suggestions
+"You are a UI/UX designer assistant. Based on this idea: ‘Customers check in using their phone number to track loyalty,’ suggest 3 simple screens for a mobile view. Keep it minimal but delightful. Add one animation or audio interaction idea that would feel ‘joy-driven.’"
+
+ Prompt 7: Code Review for Visit Handler
+"You are a code reviewer. Here is a TypeScript function that logs a visit and checks if a reward is due. Look for bugs, bad practices, or anything unclear. Suggest improvements and explain why each change helps maintainability or performance."
+
+ Prompt 8: Debugging Help
+"You are a debugging assistant. I’m getting this error from my Supabase API when trying to write a new visit: ‘INSERT failed – null value in column “phone_number”.’ What are 3 likely causes, and how can I fix or log more clearly?"
