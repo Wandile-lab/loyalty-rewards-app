@@ -1,3 +1,20 @@
+// Supabase Configuration
+const SUPABASE_URL = 'https://pyelaubchzxijagpwwbe.supabase.co'; 
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB5ZWxhdWJjaHp4aWphZ3B3d2JlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgxOTkwMjEsImV4cCI6MjA2Mzc3NTAyMX0.1kWmM26z2ozaadDjJSDSwh6g4y2dbNF9ZQoxECpXZes'; 
+
+
+let supabase = null;
+
+// Initialize Supabase
+function initSupabase() {
+    if (typeof window.supabase !== 'undefined') {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log('Supabase initialized successfully');
+    } else {
+        console.error('Supabase library not loaded');
+    }
+}
+
 // Initialize audio context for sound effects
 let audioContext;
 let blop;
@@ -84,6 +101,10 @@ const checkinMessage = document.getElementById('checkinMessage');
 // Initialize app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     console.log('FreshPoint app loaded successfully!');
+    
+    // Initialize Supabase
+    initSupabase();
+    
     setupEventListeners();
     initializeElementRefs();
 });
